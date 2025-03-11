@@ -19,13 +19,13 @@ public class UserRepository {
 
     // 모든 사용자 조회
     public List<Map<String, Object>> findAll() {
-        String sql = "SELECT user_id, nickname, email, profile_image FROM users";
+        String sql = "SELECT user_id, nickname, email, profile_image FROM User";
         return jdbcTemplate.queryForList(sql);
     }
 
     // ID로 사용자 조회
     public Map<String, Object> findById(Long userId) {
-        String sql = "SELECT user_id, nickname, email, profile_image FROM users WHERE user_id = ?";
+        String sql = "SELECT user_id, nickname, email, profile_image FROM User WHERE user_id = ?";
         try {
             return jdbcTemplate.queryForMap(sql, userId);
         } catch (Exception e) {
@@ -35,7 +35,7 @@ public class UserRepository {
 
     // 이메일로 사용자 조회
     public Map<String, Object> findByEmail(String email) {
-        String sql = "SELECT user_id, nickname, email, profile_image FROM users WHERE email = ?";
+        String sql = "SELECT user_id, nickname, email, profile_image FROM User WHERE email = ?";
         try {
             return jdbcTemplate.queryForMap(sql, email);
         } catch (Exception e) {
