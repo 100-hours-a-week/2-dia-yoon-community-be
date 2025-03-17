@@ -9,8 +9,6 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UpdatePostRequest {
-    private String title;
+public class UpdateCommentRequest {
     private String content;
-    private String postImage;
 }
