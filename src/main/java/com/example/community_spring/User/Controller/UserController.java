@@ -134,6 +134,23 @@ public class UserController {
         }
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<?>> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
+            // 토큰에서 사용자 ID 추출
+            Long userId = extractUserIdFromToken(authHeader);
+
+            // 사용자 정보 조회
+            UserResponse user = userService.getUserById(userId);
+
+            return ResponseEntity.ok(ApiResponse.builder()
+                    .success(true)
+                    .message("사용자 정보 조회에 성공했습니다.")
+                    .data(user)
+                    .build());
+
+    }
+
+
     /**
      * 프로필 업데이트 API
      * PUT /api/users/profile
@@ -156,7 +173,7 @@ public class UserController {
 
             // 토큰에서 사용자 ID 추출
             Long userId = extractUserIdFromToken(authHeader);
-            log.info("프로필 업데이트 요청: 사용자 ID {}", userId);
+            log.info("프로필 업데이트 요청: 사용자 ID {}, 새로운 닉네임 : {}", userId, request.getNickname());
 
             UserResponse updatedUser = userService.updateProfile(userId, request);
             return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
@@ -191,8 +208,8 @@ public class UserController {
             if (!StringUtils.hasText(request.getPassword())) {
                 return getBadRequestResponse("비밀번호는 필수입니다.");
             }
-            if (request.getPassword().length() < 6) {
-                return getBadRequestResponse("비밀번호는 최소 6자 이상이어야 합니다.");
+            if (request.getPassword().length() < 8 || request.getPassword().length() > 20) {
+                return getBadRequestResponse("비밀번호는 8자 이상, 20자 이하여야 합니다.");
             }
 
             // 토큰에서 사용자 ID 추출
@@ -200,6 +217,7 @@ public class UserController {
             log.info("비밀번호 변경 요청: 사용자 ID {}", userId);
 
             userService.updatePassword(userId, request);
+            log.info("비밀번호 변경 완료 : {}",request.getPassword());
             return ResponseEntity.ok(ApiResponse.builder()
                     .success(true)
                     .message("비밀번호가 변경되었습니다.")
@@ -212,6 +230,12 @@ public class UserController {
             log.error("비밀번호 변경 중 오류 발생", e);
             return getServerErrorResponse();
         }
+    }
+    // 로그인 api
+    @PostMapping("/auth/login")
+    public ResponseEntity<ApiResponse<?>> authLogin(@RequestBody LoginRequest request) {
+        // 기존 login 메서드 내용을 재사용
+        return login(request);
     }
 
     /**
