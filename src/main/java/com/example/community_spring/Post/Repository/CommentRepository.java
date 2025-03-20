@@ -115,4 +115,11 @@ public class CommentRepository {
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, postId);
         return count != null ? count : 0;
     }
+
+    // 게시물의 전체 댓글 삭제
+    public void deleteAllByPostId(Long postId) {
+        String sql = "DELETE FROM Comment WHERE post_id = ?";
+        int deletedRows = jdbcTemplate.update(sql, postId);
+        System.out.println("삭제된 좋아요 수: " + deletedRows);
+    }
 }
