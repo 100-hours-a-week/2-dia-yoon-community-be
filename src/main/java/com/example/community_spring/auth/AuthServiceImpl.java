@@ -121,17 +121,6 @@ public class AuthServiceImpl implements AuthService {
 
     // 간단한 비밀번호 해싱 (실제 환경에서는 더 안전한 방식 권장)
     private String hashPassword(String password) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] hash = md.digest(password.getBytes());
-            StringBuilder sb = new StringBuilder();
-            for (byte b : hash) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-        } catch (NoSuchAlgorithmException e) {
-            // 매우 기본적인 해시
-            return password + "hashed";
-        }
+        return password;
     }
 }
