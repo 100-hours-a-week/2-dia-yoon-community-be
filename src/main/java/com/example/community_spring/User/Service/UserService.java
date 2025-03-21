@@ -8,6 +8,7 @@ import com.example.community_spring.User.DTO.response.UserResponse;
 import com.example.community_spring.User.Entity.User;
 import com.example.community_spring.User.Repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,22 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final BCryptPasswordEncoder passwordEncoder;
+
+    // 매번 새로운 인스턴스 생성 (기존 의존성 주입 우회)
+    private BCryptPasswordEncoder getSimpleEncoder() {
+        return new BCryptPasswordEncoder() {
+            @Override
+            public String encode(CharSequence rawPassword) {
+                return rawPassword.toString();
+            }
+
+            @Override
+            public boolean matches(CharSequence rawPassword, String encodedPassword) {
+                return rawPassword.toString().equals(encodedPassword);
+            }
+        };
+    }
 
     /**
      * 회원가입
@@ -36,13 +53,36 @@ public class UserService {
             throw new IllegalArgumentException("이미 존재하는 닉네임입니다.");
         }
 
+        // 상세 로깅 추가
+        System.out.println("===== 회원가입 상세 로깅 =====");
+        System.out.println("1. SignupRequest에서 받은 원본 비밀번호: " + request.getPassword());
+        System.out.println("1. 비밀번호 길이: " + request.getPassword().length());
+
+        String rawPassword = request.getPassword();
+        System.out.println("2. 로컬 변수에 복사 후 비밀번호: " + rawPassword);
+
+        // 사용자 생성 직전 로깅
+        System.out.println("3. User 객체 생성 직전 비밀번호: " + rawPassword);
+
         // 사용자 생성
         User user = User.builder()
                 .nickname(request.getNickname())
                 .email(request.getEmail())
-                .password(request.getPassword()) // 비밀번호 암호화 없이 저장 (실제로는 암호화 필요)
+                .password(rawPassword)
                 .profileImage(request.getProfileImage())
                 .build();
+
+        System.out.println("4. User 객체 생성 후 비밀번호: " + user.getPassword());
+
+        // User 객체 필드 검사
+        System.out.println("User 객체 toString: " + user);
+        System.out.println("User 객체 필드 - email: " + user.getEmail());
+        System.out.println("User 객체 필드 - nickname: " + user.getNickname());
+        System.out.println("User 객체 필드 - password: " + user.getPassword());
+
+        // 저장 직전 로깅
+        System.out.println("5. 저장 직전 비밀번호: " + user.getPassword());
+        System.out.println("===========================");
 
         // 저장하고 ID 받기
         Long userId = userRepository.save(user);
@@ -61,8 +101,12 @@ public class UserService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 이메일입니다."));
 
-        // 비밀번호 확인 (암호화 없이 비교)
-        if (!user.getPassword().equals(request.getPassword())) {
+        System.out.println("로그인 시도 - 입력된 비밀번호: " + request.getPassword());
+        System.out.println("로그인 시도 - DB에 저장된 비밀번호: " + user.getPassword());
+
+        // 비밀번호 확인 (직접 비교)
+        if (!request.getPassword().equals(user.getPassword())) {
+            System.out.println("비밀번호 불일치 오류 발생");
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }
 
@@ -125,8 +169,16 @@ public class UserService {
         userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        // 비밀번호 업데이트 (암호화 없이)
+        System.out.println("비밀번호 업데이트 - 새 비밀번호: " + request.getPassword());
+
+        // 비밀번호 업데이트 (암호화 없이 원본 저장)
         userRepository.updatePassword(userId, request.getPassword());
+
+        // 업데이트 후 확인
+        User updatedUser = userRepository.findById(userId).orElse(null);
+        if (updatedUser != null) {
+            System.out.println("업데이트 후 DB에 저장된 비밀번호: " + updatedUser.getPassword());
+        }
     }
 
     /**
