@@ -74,6 +74,13 @@ public class UserRepository {
     // 사용자 저장
     public Long save(User user) {
         try {
+            // 저장 직전 비밀번호 로깅
+            System.out.println("===== 저장 직전 비밀번호 로깅 =====");
+            System.out.println("사용자 이메일: " + user.getEmail());
+            System.out.println("저장 직전 원본 비밀번호: " + user.getPassword());
+            System.out.println("비밀번호 길이: " + user.getPassword().length());
+            System.out.println("===================================");
+
             String sql = "INSERT INTO user (nickname, email, password, profile_image, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())";
             KeyHolder keyHolder = new GeneratedKeyHolder();
 
@@ -81,12 +88,27 @@ public class UserRepository {
                 PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
                 ps.setString(1, user.getNickname());
                 ps.setString(2, user.getEmail());
-                ps.setString(3, user.getPassword());
+
+                // 비밀번호 설정 직전 로깅
+                System.out.println("PS에 비밀번호 설정 직전: " + user.getPassword());
+
+                ps.setString(3, user.getPassword()); // 원본 비밀번호 그대로 사용
                 ps.setString(4, user.getProfileImage());
                 return ps;
             }, keyHolder);
 
-            return keyHolder.getKey().longValue();
+            Long generatedId = keyHolder.getKey().longValue();
+
+            // 저장 후 조회하여 로깅
+            User savedUser = findById(generatedId).orElse(null);
+            if (savedUser != null) {
+                System.out.println("===== 저장 후 조회한 비밀번호 로깅 =====");
+                System.out.println("사용자 ID: " + savedUser.getUserId());
+                System.out.println("저장된 비밀번호: " + savedUser.getPassword());
+                System.out.println("======================================");
+            }
+
+            return generatedId;
         } catch (Exception e) {
             System.err.println("사용자 저장 중 오류 발생: " + e.getMessage());
             e.printStackTrace();
