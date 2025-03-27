@@ -53,43 +53,22 @@ public class UserService {
             throw new IllegalArgumentException("이미 존재하는 닉네임입니다.");
         }
 
-        // 상세 로깅 추가
-        System.out.println("===== 회원가입 상세 로깅 =====");
-        System.out.println("1. SignupRequest에서 받은 원본 비밀번호: " + request.getPassword());
-        System.out.println("1. 비밀번호 길이: " + request.getPassword().length());
-
-        String rawPassword = request.getPassword();
-        System.out.println("2. 로컬 변수에 복사 후 비밀번호: " + rawPassword);
-
-        // 사용자 생성 직전 로깅
-        System.out.println("3. User 객체 생성 직전 비밀번호: " + rawPassword);
+        // 비밀번호 암호화
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
 
         // 사용자 생성
         User user = User.builder()
                 .nickname(request.getNickname())
                 .email(request.getEmail())
-                .password(rawPassword)
+                .password(encodedPassword)
                 .profileImage(request.getProfileImage())
                 .build();
 
-        System.out.println("4. User 객체 생성 후 비밀번호: " + user.getPassword());
-
-        // User 객체 필드 검사
-        System.out.println("User 객체 toString: " + user);
-        System.out.println("User 객체 필드 - email: " + user.getEmail());
-        System.out.println("User 객체 필드 - nickname: " + user.getNickname());
-        System.out.println("User 객체 필드 - password: " + user.getPassword());
-
-        // 저장 직전 로깅
-        System.out.println("5. 저장 직전 비밀번호: " + user.getPassword());
-        System.out.println("===========================");
-
-        // 저장하고 ID 받기
-        Long userId = userRepository.save(user);
-        user.setUserId(userId);
+        // JPA를 사용하여 사용자 저장
+        User savedUser = userRepository.save(user);
 
         // 응답 객체 생성
-        return UserResponse.fromEntity(user);
+        return UserResponse.fromEntity(savedUser);
     }
 
     /**
@@ -181,17 +160,15 @@ public class UserService {
         }
     }
 
-    /**
-     * 회원 탈퇴
-     */
+    // 회원 탈퇴
     @Transactional
     public void deleteUser(Long userId) {
-        // 사용자 존재 여부 확인
-        userRepository.findById(userId)
+        // 사용자 존재 여부 확인 및 조회
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        // 사용자 삭제
-        userRepository.delete(userId);
+        // 사용자 삭제 - 엔티티 객체를 전달
+        userRepository.delete(user);
     }
 
     /**
