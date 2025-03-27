@@ -45,47 +45,6 @@ public class UserController {
     }
 
     /**
-     * 로그인 API
-     * POST /api/users/login
-     */
-//    @PostMapping("/login")
-//    public ResponseEntity<ApiResponse<?>> login(@RequestBody LoginRequest request) {
-//        try {
-//            // 수동 이메일 검증
-//            if (!StringUtils.hasText(request.getEmail())) {
-//                return getBadRequestResponse("이메일은 필수입니다.");
-//            }
-//
-//            // 비밀번호 검증
-//            if (!StringUtils.hasText(request.getPassword())) {
-//                return getBadRequestResponse("비밀번호는 필수입니다.");
-//            }
-//            if (request.getPassword().length() < 8 || request.getPassword().length() > 20) {
-//                return getBadRequestResponse("비밀번호는 8자 이상, 20자 이하여야 합니다.");
-//            }
-//
-//            log.info("로그인 요청: {}", request.getEmail());
-//            Map<String, Object> result = userService.login(request);
-//            return ResponseEntity.ok(ApiResponse.builder()
-//                    .success(true)
-//                    .message("로그인에 성공했습니다.")
-//                    .data(result)
-//                    .build());
-//        } catch (IllegalArgumentException e) {
-//            log.warn("로그인 실패: {}", e.getMessage());
-//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-//                    .body(ApiResponse.builder()
-//                            .success(false)
-//                            .message(e.getMessage())
-//                            .data(null)
-//                            .build());
-//        } catch (Exception e) {
-//            log.error("로그인 중 오류 발생", e);
-//            return getServerErrorResponse();
-//        }
-//    }
-
-    /**
      * 현재 사용자 프로필 조회 API
      * GET /api/users/profile
      */
@@ -213,12 +172,7 @@ public class UserController {
             return getServerErrorResponse();
         }
     }
-//    // 로그인 api
-//    @PostMapping("/auth/login")
-//    public ResponseEntity<ApiResponse<?>> authLogin(@RequestBody LoginRequest request) {
-//        // 기존 login 메서드 내용을 재사용
-//        return login(request);
-//    }
+
     /**
      * 회원 탈퇴 API
      * DELETE /api/users
