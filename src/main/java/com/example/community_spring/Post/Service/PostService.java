@@ -5,14 +5,19 @@ import com.example.community_spring.Post.DTO.request.UpdatePostRequest;
 import com.example.community_spring.Post.DTO.response.PostListResponse;
 import com.example.community_spring.Post.DTO.response.PostResponse;
 import com.example.community_spring.Post.Entity.Post;
-import com.example.community_spring.Post.Repository.LikesRepository;
 import com.example.community_spring.Post.Repository.CommentRepository;
+import com.example.community_spring.Post.Repository.LikesRepository;
 import com.example.community_spring.Post.Repository.PostRepository;
 import com.example.community_spring.User.Repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,8 +27,8 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
-    private final LikesRepository LikesRepository;
-    private final CommentRepository CommentRepository;
+    private final LikesRepository likesRepository;
+    private final CommentRepository commentRepository;
 
     private static final int PAGE_SIZE = 10; // 페이지당 게시글 수
 
@@ -32,25 +37,26 @@ public class PostService {
      */
     @Transactional(readOnly = true)
     public PostListResponse getPosts(int page) {
-        int offset = (page - 1) * PAGE_SIZE;
-        List<Post> posts = postRepository.findAll(PAGE_SIZE, offset);
+        int pageIndex = page - 1; // 페이지 인덱스는 0부터 시작
+        Pageable pageable = PageRequest.of(pageIndex, PAGE_SIZE, Sort.by("createdAt").descending());
+
+        // JPA 페이징 적용
+        Page<Post> postsPage = postRepository.findAll(pageable);
+        List<Post> posts = postsPage.getContent();
 
         // Entity -> DTO 변환
         List<PostResponse> postResponses = posts.stream()
+                .map(this::enrichPostWithUserInfo) // 사용자 정보 보강
                 .map(PostResponse::fromEntity)
                 .collect(Collectors.toList());
-
-        // 전체 게시글 수와 페이지 정보 계산
-        int totalPosts = postRepository.countAll();
-        int totalPages = (int) Math.ceil((double) totalPosts / PAGE_SIZE);
 
         return PostListResponse.builder()
                 .posts(postResponses)
                 .currentPage(page)
-                .totalPages(totalPages)
-                .totalPosts(totalPosts)
-                .hasNext(page < totalPages)
-                .hasPrevious(page > 1)
+                .totalPages(postsPage.getTotalPages())
+                .totalPosts((int) postsPage.getTotalElements())
+                .hasNext(postsPage.hasNext())
+                .hasPrevious(postsPage.hasPrevious())
                 .build();
     }
 
@@ -59,25 +65,26 @@ public class PostService {
      */
     @Transactional(readOnly = true)
     public PostListResponse getPostsByUserId(Long userId, int page) {
-        int offset = (page - 1) * PAGE_SIZE;
-        List<Post> posts = postRepository.findByUserId(userId, PAGE_SIZE, offset);
+        int pageIndex = page - 1;
+        Pageable pageable = PageRequest.of(pageIndex, PAGE_SIZE, Sort.by("createdAt").descending());
+
+        // JPA 페이징 적용
+        Page<Post> postsPage = postRepository.findByUserId(userId, pageable);
+        List<Post> posts = postsPage.getContent();
 
         // Entity -> DTO 변환
         List<PostResponse> postResponses = posts.stream()
+                .map(this::enrichPostWithUserInfo)
                 .map(PostResponse::fromEntity)
                 .collect(Collectors.toList());
-
-        // 해당 사용자의 전체 게시글 수와 페이지 정보 계산
-        int totalPosts = postRepository.countByUserId(userId);
-        int totalPages = (int) Math.ceil((double) totalPosts / PAGE_SIZE);
 
         return PostListResponse.builder()
                 .posts(postResponses)
                 .currentPage(page)
-                .totalPages(totalPages)
-                .totalPosts(totalPosts)
-                .hasNext(page < totalPages)
-                .hasPrevious(page > 1)
+                .totalPages(postsPage.getTotalPages())
+                .totalPosts((int) postsPage.getTotalElements())
+                .hasNext(postsPage.hasNext())
+                .hasPrevious(postsPage.hasPrevious())
                 .build();
     }
 
@@ -95,6 +102,9 @@ public class PostService {
         // 최신 데이터로 다시 조회
         post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+
+        // 사용자 정보 보강
+        post = enrichPostWithUserInfo(post);
 
         return PostResponse.fromEntity(post);
     }
@@ -114,13 +124,18 @@ public class PostService {
                 .title(request.getTitle())
                 .content(request.getContent())
                 .postImage(request.getPostImage())
+                .createdAt(LocalDateTime.now())
+                .likes(0)
+                .views(0)
                 .build();
 
         // 게시글 저장
-        Long postId = postRepository.save(post);
+        Post savedPost = postRepository.save(post);
 
-        // 저장된 게시글 조회
-        return getPost(postId);
+        // 저장된 게시글에 사용자 정보 보강
+        savedPost = enrichPostWithUserInfo(savedPost);
+
+        return PostResponse.fromEntity(savedPost);
     }
 
     /**
@@ -142,10 +157,12 @@ public class PostService {
         post.setContent(request.getContent());
         post.setPostImage(request.getPostImage());
 
-        postRepository.update(post);
+        Post updatedPost = postRepository.save(post);
 
-        // 업데이트된 게시글 조회
-        return getPost(postId);
+        // 업데이트된 게시글에 사용자 정보 보강
+        updatedPost = enrichPostWithUserInfo(updatedPost);
+
+        return PostResponse.fromEntity(updatedPost);
     }
 
     /**
@@ -163,12 +180,24 @@ public class PostService {
         }
 
         // 관련 좋아요 데이터 먼저 삭제
-        LikesRepository.deleteAllByPostId(postId);
+        likesRepository.deleteAllByPostId(postId);
 
         // 관련 댓글 데이터 삭제
-        CommentRepository.deleteAllByPostId(postId);
+        commentRepository.deleteAllByPostId(postId);
 
         // 마지막으로 게시글 삭제
-        postRepository.delete(postId);
+        postRepository.deleteById(postId);
+    }
+
+    /**
+     * 게시글에 사용자 정보 채우기
+     */
+    private Post enrichPostWithUserInfo(Post post) {
+        userRepository.findById(post.getUserId()).ifPresent(user -> {
+            post.setAuthorNickname(user.getNickname());
+            post.setAuthorEmail(user.getEmail());
+            post.setAuthorProfileImage(user.getProfileImage());
+        });
+        return post;
     }
 }
