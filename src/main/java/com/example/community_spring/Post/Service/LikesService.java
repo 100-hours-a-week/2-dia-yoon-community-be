@@ -1,5 +1,6 @@
 package com.example.community_spring.Post.Service;
 
+import com.example.community_spring.Post.Entity.Likes;
 import com.example.community_spring.Post.Repository.LikesRepository;
 import com.example.community_spring.Post.Repository.PostRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,13 +27,16 @@ public class LikesService {
         boolean alreadyLiked = likesRepository.existsByPostIdAndUserId(postId, userId);
 
         if (alreadyLiked) {
-            // 좋아요 취소
-            likesRepository.removeLike(postId, userId);
+            // 좋아요 취소 (메소드명 변경)
+            likesRepository.deleteByPostIdAndUserId(postId, userId); // removeLike -> deleteByPostIdAndUserId
             postRepository.decrementLikes(postId);
             return false; // 좋아요 취소됨
         } else {
-            // 좋아요 추가
-            likesRepository.addLike(postId, userId);
+            // 좋아요 추가 (메소드명 변경)
+            Likes like = new Likes();
+            like.setPostId(postId);
+            like.setUserId(userId);
+            likesRepository.save(like); // addLike -> save
             postRepository.incrementLikes(postId);
             return true; // 좋아요 추가됨
         }
