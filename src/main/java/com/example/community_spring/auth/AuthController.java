@@ -23,13 +23,10 @@ public class AuthController {
 
     private final AuthService authService;
 
-    /**
-     * 회원가입 API
-     * POST /api/auth/register
-     */
+    // 회원가입 api
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<?>> register(@RequestBody SignupRequest request) {
-        // 수동 이메일 검증
+        // 이메일 검증
         if (!StringUtils.hasText(request.getEmail())) {
             throw new IllegalArgumentException("이메일은 필수입니다.");
         }
@@ -67,19 +64,31 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<?>> login(@RequestBody LoginRequest request) {
-        // 수동 이메일 검증
-        if (!StringUtils.hasText(request.getEmail())) {
-            throw new IllegalArgumentException("이메일은 필수입니다.");
-        }
-
-        // 수동 비밀번호 검증
-        if (!StringUtils.hasText(request.getPassword())) {
-            throw new IllegalArgumentException("비밀번호는 필수입니다.");
-        }
-
-        log.info("로그인 요청: {}", request.getEmail());
-
         try {
+            // 수동 이메일 검증
+            if (!StringUtils.hasText(request.getEmail())) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.builder()
+                                .success(false)
+                                .message("이메일은 필수입니다.")
+                                .data(null)
+                                .build()
+                );
+            }
+
+            // 수동 비밀번호 검증
+            if (!StringUtils.hasText(request.getPassword())) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.builder()
+                                .success(false)
+                                .message("비밀번호는 필수입니다.")
+                                .data(null)
+                                .build()
+                );
+            }
+
+            log.info("로그인 요청: {}", request.getEmail());
+
             Map<String, Object> result = authService.login(request);
             return ResponseEntity.ok(ApiResponse.builder()
                     .success(true)
@@ -87,7 +96,21 @@ public class AuthController {
                     .data(result)
                     .build());
         } catch (IllegalArgumentException e) {
-            throw new UnauthorizedException(e.getMessage());
+            log.warn("로그인 실패: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.builder()
+                            .success(false)
+                            .message(e.getMessage())
+                            .data(null)
+                            .build());
+        } catch (Exception e) {
+            log.error("로그인 중 서버 오류: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.builder()
+                            .success(false)
+                            .message("서버 오류가 발생했습니다.")
+                            .data(null)
+                            .build());
         }
     }
 
