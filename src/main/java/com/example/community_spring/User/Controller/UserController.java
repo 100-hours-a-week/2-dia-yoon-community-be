@@ -21,30 +21,6 @@ public class UserController {
     private final UserService userService;
 
     /**
-     * 회원가입 API
-     * POST /api/users/signup
-     */
-    @PostMapping("/signup")
-    public ResponseEntity<ApiResponse<?>> signup(@RequestBody SignupRequest request) {
-        try {
-            log.info("회원가입 요청: {}", request.getEmail());
-            UserResponse user = userService.signup(request);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.<UserResponse>builder()
-                            .success(true)
-                            .message("회원가입이 완료되었습니다.")
-                            .data(user)
-                            .build());
-        } catch (IllegalArgumentException e) {
-            log.warn("회원가입 실패: {}", e.getMessage());
-            return getBadRequestResponse(e.getMessage());
-        } catch (Exception e) {
-            log.error("회원가입 중 오류 발생", e);
-            return getServerErrorResponse();
-        }
-    }
-
-    /**
      * 현재 사용자 프로필 조회 API
      * GET /api/users/profile
      */
@@ -88,7 +64,6 @@ public class UserController {
                     .message("사용자 정보 조회에 성공했습니다.")
                     .data(user)
                     .build());
-
     }
 
 

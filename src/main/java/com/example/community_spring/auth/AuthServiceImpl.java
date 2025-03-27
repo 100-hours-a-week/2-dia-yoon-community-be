@@ -6,20 +6,20 @@ import com.example.community_spring.User.DTO.response.UserResponse;
 import com.example.community_spring.User.Entity.User;
 import com.example.community_spring.User.Repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
+    private final BCryptPasswordEncoder passwordEncoder; // 추가
 
     @Override
     @Transactional
@@ -34,10 +34,13 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
         }
 
-        // User 엔티티 생성
+        // 비밀번호 암호화
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
+
+        // User 엔티티 생성 (암호화된 비밀번호 사용)
         User user = User.builder()
                 .email(request.getEmail())
-                .password(request.getPassword()) // 암호화는 나중에 구현
+                .password(encodedPassword) // 암호화된 비밀번호 저장
                 .nickname(request.getNickname())
                 .profileImage(request.getProfileImage())
                 .build();
@@ -57,8 +60,8 @@ public class AuthServiceImpl implements AuthService {
             User user = userRepository.findByEmail(request.getEmail())
                     .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 이메일입니다."));
 
-            // 비밀번호 검증
-            if (!request.getPassword().equals(user.getPassword())) {
+            // 비밀번호 검증 (matches 메소드 사용)
+            if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
                 throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
             }
 
@@ -121,10 +124,5 @@ public class AuthServiceImpl implements AuthService {
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("토큰에서 사용자 ID를 추출할 수 없습니다.");
         }
-    }
-
-    // 간단한 비밀번호 해싱 (실제 환경에서는 더 안전한 방식 권장)
-    private String hashPassword(String password) {
-        return password;
     }
 }
