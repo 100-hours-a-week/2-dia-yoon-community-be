@@ -5,6 +5,7 @@ import com.example.community_spring.User.DTO.request.SignupRequest;
 import com.example.community_spring.User.DTO.response.UserResponse;
 import com.example.community_spring.User.Entity.User;
 import com.example.community_spring.User.Repository.UserRepository;
+import com.example.community_spring.util.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -12,14 +13,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
-    private final BCryptPasswordEncoder passwordEncoder; // 추가
+    private final BCryptPasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Override
     @Transactional
@@ -40,7 +41,7 @@ public class AuthServiceImpl implements AuthService {
         // User 엔티티 생성 (암호화된 비밀번호 사용)
         User user = User.builder()
                 .email(request.getEmail())
-                .password(encodedPassword) // 암호화된 비밀번호 저장
+                .password(encodedPassword)
                 .nickname(request.getNickname())
                 .profileImage(request.getProfileImage())
                 .build();
@@ -65,8 +66,8 @@ public class AuthServiceImpl implements AuthService {
                 throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
             }
 
-            // 토큰 생성
-            String token = generateToken(user.getUserId());
+            // JWT 토큰 생성
+            String token = jwtTokenProvider.generateToken(user.getUserId());
 
             // 응답 데이터 생성
             Map<String, Object> result = new HashMap<>();
@@ -101,28 +102,19 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public String generateToken(Long userId) {
-        // 간단한 토큰 생성 로직
-        return "token-" + UUID.randomUUID().toString() + "-" + userId;
+        // JWT 토큰 생성으로 변경
+        return jwtTokenProvider.generateToken(userId);
     }
 
     @Override
     public boolean validateToken(String token) {
-        // 토큰 유효성 검사 로직
-        return token != null && token.startsWith("token-");
+        // JWT 토큰 검증으로 변경
+        return jwtTokenProvider.validateToken(token);
     }
 
     @Override
     public Long getUserIdFromToken(String token) {
-        // 토큰에서 사용자 ID 추출
-        int lastDashIndex = token.lastIndexOf('-');
-        if (lastDashIndex == -1) {
-            throw new IllegalArgumentException("유효하지 않은 토큰 형식입니다.");
-        }
-
-        try {
-            return Long.parseLong(token.substring(lastDashIndex + 1));
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("토큰에서 사용자 ID를 추출할 수 없습니다.");
-        }
+        // JWT에서 사용자 ID 추출
+        return jwtTokenProvider.getUserIdFromToken(token);
     }
 }

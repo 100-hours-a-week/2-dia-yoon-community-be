@@ -1,11 +1,10 @@
 package com.example.community_spring.auth;
 
-import com.example.community_spring.exception.UnauthorizedException;
 import com.example.community_spring.User.DTO.request.LoginRequest;
 import com.example.community_spring.User.DTO.request.SignupRequest;
 import com.example.community_spring.User.DTO.response.ApiResponse;
 import com.example.community_spring.User.DTO.response.UserResponse;
-import com.example.community_spring.auth.AuthService;
+import com.example.community_spring.util.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -22,6 +21,7 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     // 회원가입 api
     @PostMapping("/register")
@@ -35,8 +35,8 @@ public class AuthController {
         if (!StringUtils.hasText(request.getPassword())) {
             throw new IllegalArgumentException("비밀번호는 필수입니다.");
         }
-        if (request.getPassword().length() < 6) {
-            throw new IllegalArgumentException("비밀번호는 최소 6자 이상이어야 합니다.");
+        if (request.getPassword().length() < 8 || request.getPassword().length() > 20) {
+            throw new IllegalArgumentException("비밀번호는 8자 이상, 20자 이하여야 합니다.");
         }
 
         // 수동 닉네임 검증
@@ -109,6 +109,57 @@ public class AuthController {
                     .body(ApiResponse.builder()
                             .success(false)
                             .message("서버 오류가 발생했습니다.")
+                            .data(null)
+                            .build());
+        }
+    }
+
+    /**
+     * 토큰 검증 API
+     * GET /api/auth/validate
+     */
+    @GetMapping("/validate")
+    public ResponseEntity<ApiResponse<?>> validateToken(@RequestHeader("Authorization") String authHeader) {
+        try {
+            // 토큰 형식 검증
+            if (!StringUtils.hasText(authHeader) || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.builder()
+                                .success(false)
+                                .message("유효하지 않은 토큰 형식입니다.")
+                                .data(null)
+                                .build());
+            }
+
+            // 헤더에서 Bearer 제거 후 토큰 문자열 가져오기
+            String token = authHeader.substring(7);
+
+            // 토큰 유효성 검증
+            boolean isValid = authService.validateToken(token);
+
+            if (!isValid) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.builder()
+                                .success(false)
+                                .message("만료되거나 유효하지 않은 토큰입니다.")
+                                .data(null)
+                                .build());
+            }
+
+            // 토큰에서 사용자 ID 추출
+            Long userId = authService.getUserIdFromToken(token);
+
+            return ResponseEntity.ok(ApiResponse.builder()
+                    .success(true)
+                    .message("유효한 토큰입니다.")
+                    .data(Map.of("userId", userId))
+                    .build());
+        } catch (Exception e) {
+            log.error("토큰 검증 중 오류 발생", e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.builder()
+                            .success(false)
+                            .message("토큰 검증 중 오류가 발생했습니다.")
                             .data(null)
                             .build());
         }
