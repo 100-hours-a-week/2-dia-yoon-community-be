@@ -29,7 +29,7 @@ public class Comment {
     private String content;
 
     // ERD에 따라 컬럼명 수정
-    @Column(name = "commentAt")
+    @Column(name = "comment_at")
     private LocalDateTime commentAt;
 
     @Transient
