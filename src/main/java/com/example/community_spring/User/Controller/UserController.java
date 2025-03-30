@@ -3,6 +3,7 @@ package com.example.community_spring.User.Controller;
 import com.example.community_spring.User.DTO.request.*;
 import com.example.community_spring.User.DTO.response.*;
 import com.example.community_spring.User.Service.UserService;
+import com.example.community_spring.util.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,7 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     /**
      * 현재 사용자 프로필 조회 API
@@ -53,17 +55,17 @@ public class UserController {
 
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<?>> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
-            // 토큰에서 사용자 ID 추출
-            Long userId = extractUserIdFromToken(authHeader);
+        // 토큰에서 사용자 ID 추출
+        Long userId = extractUserIdFromToken(authHeader);
 
-            // 사용자 정보 조회
-            UserResponse user = userService.getUserById(userId);
+        // 사용자 정보 조회
+        UserResponse user = userService.getUserById(userId);
 
-            return ResponseEntity.ok(ApiResponse.builder()
-                    .success(true)
-                    .message("사용자 정보 조회에 성공했습니다.")
-                    .data(user)
-                    .build());
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message("사용자 정보 조회에 성공했습니다.")
+                .data(user)
+                .build());
     }
 
 
@@ -133,7 +135,6 @@ public class UserController {
             log.info("비밀번호 변경 요청: 사용자 ID {}", userId);
 
             userService.updatePassword(userId, request);
-            log.info("비밀번호 변경 완료 : {}",request.getPassword());
             return ResponseEntity.ok(ApiResponse.builder()
                     .success(true)
                     .message("비밀번호가 변경되었습니다.")
@@ -209,21 +210,15 @@ public class UserController {
         }
 
         // 헤더에서 Bearer 제거 후 토큰 문자열 가져오기
-        String tokenString = authHeader.substring(7);
+        String jwt = authHeader.substring(7);
 
-        try {
-            // 토큰 형식: "token-uuid-userId" 또는 "token-uuid1-uuid2-uuid3-uuid4-userId"
-            // 마지막 '-' 이후의 문자열을 userId로 파싱
-            int lastDashIndex = tokenString.lastIndexOf('-');
-            if (lastDashIndex == -1) {
-                throw new IllegalArgumentException("유효하지 않은 토큰 형식입니다.");
-            }
-
-            String userIdStr = tokenString.substring(lastDashIndex + 1);
-            return Long.parseLong(userIdStr);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("토큰에서 사용자 ID를 추출할 수 없습니다.");
+        // JWT 토큰 검증
+        if (!jwtTokenProvider.validateToken(jwt)) {
+            throw new IllegalArgumentException("유효하지 않은 토큰입니다.");
         }
+
+        // JWT 토큰에서 사용자 ID 추출
+        return jwtTokenProvider.getUserIdFromToken(jwt);
     }
 
     /**
