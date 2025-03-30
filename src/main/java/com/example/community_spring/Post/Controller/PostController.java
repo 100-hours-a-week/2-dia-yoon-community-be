@@ -6,8 +6,10 @@ import com.example.community_spring.Post.DTO.response.PostListResponse;
 import com.example.community_spring.Post.DTO.response.PostResponse;
 import com.example.community_spring.Post.Service.PostService;
 import com.example.community_spring.User.DTO.response.ApiResponse;
+import com.example.community_spring.util.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 public class PostController {
 
     private final PostService postService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     /**
      * 게시글 목록 조회 API
@@ -232,21 +235,12 @@ public class PostController {
         }
 
         // 헤더에서 Bearer 제거 후 토큰 문자열 가져오기
-        String tokenString = authHeader.substring(7);
+        String jwt = authHeader.substring(7);
 
-        try {
-            // 토큰 형식: "token-uuid-userId" 또는 "token-uuid1-uuid2-uuid3-uuid4-userId"
-            // 마지막 '-' 이후의 문자열을 userId로 파싱
-            int lastDashIndex = tokenString.lastIndexOf('-');
-            if (lastDashIndex == -1) {
-                throw new IllegalArgumentException("유효하지 않은 토큰 형식입니다.");
-            }
-
-            String userIdStr = tokenString.substring(lastDashIndex + 1);
-            return Long.parseLong(userIdStr);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("토큰에서 사용자 ID를 추출할 수 없습니다.");
+        if (!jwtTokenProvider.validateToken(jwt)) {
+            throw new IllegalArgumentException("유효하지 않은 토큰입니다");
         }
+        return jwtTokenProvider.getUserIdFromToken(jwt);
     }
 
     /**
