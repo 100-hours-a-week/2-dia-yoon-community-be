@@ -8,28 +8,14 @@ RESTful 아키텍처를 기반으로 구축되었으며, JWT를 활용한 인증
 
 ## 기술 스택
 
-### 코어
-- **Java 17** : 최신 Java 언어 기능 및 성능 향상 활용
-- **Spring Boot 3.x** : 애플리케이션 프레임워크
-- **Spring Security** : 인증 및 권한 관리
-- **Spring Data JPA** : ORM 및 데이터 액세스 계층
-
-### 데이터베이스
-- **MySQL** : 관계형 데이터베이스
-
-### 인증
-- **JWT (JSON Web Token)** : 토큰 기반 인증 구현
-- **BCrypt** : 안전한 비밀번호 암호화
-
-### API
-- **RESTful API** : 표준 HTTP 메서드 및 상태 코드 준수
-- **DTO 패턴** : API 요청/응답 데이터 캡슐화
-
-### 개발 도구 및 라이브러리
-- **Lombok** : 간결한 코드 작성
-- **Slf4j** : 로깅 프레임워크
-- **Spring Validation** : 입력 데이터 유효성 검증
-
+| 분류 | 기술 |
+|------|------|
+| **언어 및 프레임워크** | Java 17, Spring Boot 3.x |
+| **보안** | Spring Security, JWT, BCrypt |
+| **데이터베이스** | MySQL, Spring Data JPA, Hibernate |
+| **API 설계** | RESTful API, DTO 패턴 |
+| **유틸리티** | Lombok, Slf4j, Spring Validation |
+| **인프라/기타** | CORS 구성, Transaction 관리, Global Exception Handling |
 
 ## 주요 기능
 
