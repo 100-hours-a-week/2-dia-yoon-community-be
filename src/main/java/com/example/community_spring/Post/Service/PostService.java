@@ -8,6 +8,7 @@ import com.example.community_spring.Post.Entity.Post;
 import com.example.community_spring.Post.Repository.CommentRepository;
 import com.example.community_spring.Post.Repository.LikesRepository;
 import com.example.community_spring.Post.Repository.PostRepository;
+import com.example.community_spring.User.Entity.User;
 import com.example.community_spring.User.Repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -103,8 +104,11 @@ public class PostService {
         post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
 
-        // 사용자 정보 보강
+        // 사용자 정보 보강 - 명시적으로 로그 출력
         post = enrichPostWithUserInfo(post);
+        System.out.println("게시글 조회 결과: postId=" + post.getPostId() +
+                ", authorNickname=" + post.getAuthorNickname() +
+                ", authorProfileImage=" + post.getAuthorProfileImage());
 
         return PostResponse.fromEntity(post);
     }
@@ -114,8 +118,8 @@ public class PostService {
      */
     @Transactional
     public PostResponse createPost(Long userId, CreatePostRequest request) {
-        // 사용자가 존재하는지 확인
-        userRepository.findById(userId)
+        // 사용자가 존재하는지 확인하고 사용자 정보 가져오기
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         // 게시글 엔티티 생성
@@ -133,11 +137,12 @@ public class PostService {
         Post savedPost = postRepository.save(post);
 
         // 저장된 게시글에 사용자 정보 보강
-        savedPost = enrichPostWithUserInfo(savedPost);
+        savedPost.setAuthorNickname(user.getNickname());
+        savedPost.setAuthorEmail(user.getEmail());
+        savedPost.setAuthorProfileImage(user.getProfileImage());
 
         return PostResponse.fromEntity(savedPost);
     }
-
     /**
      * 게시글 수정
      */
@@ -193,11 +198,20 @@ public class PostService {
      * 게시글에 사용자 정보 채우기
      */
     private Post enrichPostWithUserInfo(Post post) {
-        userRepository.findById(post.getUserId()).ifPresent(user -> {
+        User user = userRepository.findById(post.getUserId()).orElse(null);
+
+        if (user != null) {
             post.setAuthorNickname(user.getNickname());
             post.setAuthorEmail(user.getEmail());
             post.setAuthorProfileImage(user.getProfileImage());
-        });
+
+            // 디버깅 로그 추가
+            System.out.println("사용자 정보 보강: userId=" + user.getUserId() +
+                    ", profileImage=" + user.getProfileImage());
+        } else {
+            System.out.println("사용자를 찾을 수 없음: userId=" + post.getUserId());
+        }
+
         return post;
     }
 }
