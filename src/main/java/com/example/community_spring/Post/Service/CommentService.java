@@ -6,12 +6,14 @@ import com.example.community_spring.Post.DTO.response.CommentResponse;
 import com.example.community_spring.Post.Entity.Comment;
 import com.example.community_spring.Post.Repository.CommentRepository;
 import com.example.community_spring.Post.Repository.PostRepository;
+import com.example.community_spring.User.Entity.User;
 import com.example.community_spring.User.Repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,12 +32,28 @@ public class CommentService {
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
 
         // 댓글 목록 조회
-        List<Comment> comments = commentRepository.findByPostIdOrderByCommentAtAsc(postId); // findByPostId -> findByPostIdOrderByCommentAtAsc
+        List<Comment> comments = commentRepository.findByPostIdOrderByCommentAtAsc(postId);
 
-        // Entity -> DTO 변환
-        return comments.stream()
-                .map(CommentResponse::fromEntity)
-                .collect(Collectors.toList());
+        // 각 댓글에 최신 사용자 정보 보강
+        List<CommentResponse> result = new ArrayList<>();
+
+        for (Comment comment : comments) {
+            User user = userRepository.findById(comment.getUserId()).orElse(null);
+
+            if (user != null) {
+                comment.setAuthorNickname(user.getNickname());
+                comment.setAuthorProfileImage(user.getProfileImage());
+
+                System.out.println("댓글 사용자 정보: userId=" + user.getUserId() +
+                        ", profileImage=" + user.getProfileImage());
+            } else {
+                System.out.println("댓글 작성자를 찾을 수 없음: userId=" + comment.getUserId());
+            }
+
+            result.add(CommentResponse.fromEntity(comment));
+        }
+
+        return result;
     }
 
     @Transactional
