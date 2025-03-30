@@ -2,6 +2,7 @@ package com.example.community_spring.Post.Controller;
 
 import com.example.community_spring.Post.Service.LikesService;
 import com.example.community_spring.User.DTO.response.ApiResponse;
+import com.example.community_spring.util.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import java.util.Map;
 public class LikesController {
 
     private final LikesService likesService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     /**
      * 좋아요 토글 API
@@ -101,7 +103,7 @@ public class LikesController {
     }
 
     /**
-     * 토큰에서 사용자 ID 추출
+     * 토큰에서 사용자 ID 추출 (JWT 방식으로 변경)
      */
     private Long extractUserIdFromToken(String authHeader) {
         // 토큰 형식 검증
@@ -110,21 +112,15 @@ public class LikesController {
         }
 
         // 헤더에서 Bearer 제거 후 토큰 문자열 가져오기
-        String tokenString = authHeader.substring(7);
+        String jwt = authHeader.substring(7);
 
-        try {
-            // 토큰 형식: "token-uuid-userId" 또는 "token-uuid1-uuid2-uuid3-uuid4-userId"
-            // 마지막 '-' 이후의 문자열을 userId로 파싱
-            int lastDashIndex = tokenString.lastIndexOf('-');
-            if (lastDashIndex == -1) {
-                throw new IllegalArgumentException("유효하지 않은 토큰 형식입니다.");
-            }
-
-            String userIdStr = tokenString.substring(lastDashIndex + 1);
-            return Long.parseLong(userIdStr);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("토큰에서 사용자 ID를 추출할 수 없습니다.");
+        // JWT 토큰 검증
+        if (!jwtTokenProvider.validateToken(jwt)) {
+            throw new IllegalArgumentException("유효하지 않은 토큰입니다.");
         }
+
+        // JWT 토큰에서 사용자 ID 추출
+        return jwtTokenProvider.getUserIdFromToken(jwt);
     }
 
     /**
