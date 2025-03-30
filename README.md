@@ -133,7 +133,7 @@ com.example.community_spring/
 ```
 
 ## ERD (Entity Relationship Diagram)
-
+<img width="1037" alt="Image" src="https://github.com/user-attachments/assets/b7f0175a-7471-453d-82da-707b3f7a736a" />
 
 ### 테이블 설명
 
@@ -213,95 +213,21 @@ com.example.community_spring/
 | POST | /api/posts/{postId}/likes | 좋아요 토글 | 토큰 | 200 OK |
 | GET | /api/posts/{postId}/likes/status | 좋아요 상태 조회 | 토큰 | 200 OK |
 
-## 코드 품질 및 최적화
-
-### 보안 최적화
-- 비밀번호 암호화 (BCrypt) 적용
-- JWT 토큰 유효기간 및 서명 검증
-- 권한 기반 리소스 접근 제어
-- 입력 데이터 검증 및 이스케이핑
-
-### 성능 최적화
-- 적절한 인덱싱 (userId, postId 등)
-- 트랜잭션 범위 최소화
-- 페이지네이션을 통한 대량 데이터 처리
-- N+1 문제 회피를 위한 쿼리 최적화
-
-### 코드 품질
-- 일관된 예외 처리 및 로깅
-- 명확한 계층 분리
-- 재사용 가능한 컴포넌트
-- 가독성 높은 코드 스타일
-
-## 설치 및 실행 방법
-
-### 사전 요구사항
-- JDK 17 이상
-- Maven 또는 Gradle
-- MySQL 8.0 이상
-
-### 설치 단계
-1. 저장소 클론
-   ```bash
-   git clone https://github.com/yourusername/community-spring.git
-   cd community-spring
-   ```
-
-2. 데이터베이스 설정
-   ```sql
-   CREATE DATABASE community_spring;
-   USE community_spring;
-   ```
-
-3. application.properties 구성 (src/main/resources/application.properties)
-   ```properties
-   # 데이터베이스 연결 설정
-   spring.datasource.url=jdbc:mysql://localhost:3306/community_spring?useSSL=false&serverTimezone=UTC
-   spring.datasource.username=your_username
-   spring.datasource.password=your_password
-   
-   # JPA 설정
-   spring.jpa.hibernate.ddl-auto=update
-   spring.jpa.show-sql=true
-   spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
-   
-   # JWT 설정
-   jwt.secret=your_very_long_and_secure_secret_key_for_jwt_token_generation
-   jwt.expiration=86400000
-   ```
-
-4. 애플리케이션 빌드
-   ```bash
-   ./mvnw clean package
-   ```
-
-5. 애플리케이션 실행
-   ```bash
-   java -jar target/community-spring-0.0.1-SNAPSHOT.jar
-   ```
 
 ## 후기
 
-본 프로젝트는 현대적인 Spring 기반 백엔드 시스템의 구축 과정에서 얻은 다양한 인사이트를 담고 있습니다. 특히 아래 항목들에 중점을 두었습니다:
+2주 간 프로젝트를 진행하면서 많이 성장할 수 있었습니다. 기회가 된다면 고도화를 진행하고 싶었지만, 진행하지 못함에 많은 아쉬움이 남습니다. 
+이전에 백엔드 개발 경험은 있었지만, 프론트도 오랜만에 하고 연동은 처음 하는 것이라서 많은 어려움이 존재했습니다. API 명세서를 자세하게 작성했다고 생각했는데 개발 과정에서 더욱 자세한 API를 요구함을 알게되었습니다. 이후에 개발할 때는 설계를 탄탄하게 해야겠다고 느꼈습니다. 
 
-1. **계층화된 아키텍처**: 책임과 관심사를 명확하게 분리하여 유지보수성과 테스트 용이성을 극대화했습니다.
+프론트엔드를 개발할 때, 공통되는 헤더를 페이지별로 중복되게 짰었습니다. 그러나 백엔드 연동 과정에서 동일한 코드들을 계속 바꿔줘야 하는 것을 인식하고 Header 라는 공통 코드를 작성하게 되었습니다. 처음 프론트 개발을 할 때 미리 처리했더라면, 연동에서 시간 단축이 되었을텐데 아쉬웠습니다. 
 
-2. **보안 최적화**: JWT 토큰을 기반으로 한 인증 시스템은 효율적이면서도 안전한 사용자 인증을 가능하게 합니다.
-
-3. **비즈니스 로직 중심**: 각 서비스 레이어에서 비즈니스 규칙을 명확하게 구현하여 일관된 애플리케이션 동작을 보장합니다.
-
-4. **API 설계 표준화**: 모든 API 응답은 일관된 형식(ApiResponse)을 따르며, 적절한 HTTP 상태 코드와 메시지를 제공합니다.
-
-5. **예외 처리 전략**: 중앙화된 예외 처리 메커니즘을 통해 클라이언트에게 유용한 오류 정보를 제공합니다.
+그리고 코드를 짤 때는 개발을 완성하는 것에 집중해서 가독성이나 코드의 타당성에 대해 생각하지 못했습니다. 이후 케빈의 피드백을 받고 효율적인 코드로 수정하면 좋을 것 같습니다. 
 
 ### 개선 가능성
 
-향후 다음과 같은 개선사항을 고려할 수 있습니다:
+향후 다음과 같은 고도화를 진행하고 싶습니다. 
 
-1. **캐싱 레이어 추가**: Redis와 같은 캐시 저장소를 도입하여 자주 접근하는 데이터의 성능 향상
-2. **검색 기능 강화**: Elasticsearch 통합으로 전문 검색 기능 제공
-3. **파일 업로드 최적화**: AWS S3 연동을 통한 확장 가능한 이미지 저장소 구현
-4. **API 문서화**: Swagger/OpenAPI 통합으로 자동화된 API 문서 제공
-5. **마이크로서비스 아키텍처 검토**: 일부 기능을 독립적인 서비스로 분리하여 확장성 개선
-
-본 프로젝트는 완전한 커뮤니티 플랫폼 구축을 위한 견고한 백엔드 기반을 제공하며, 확장성과 유지보수성을 고려한 설계로 향후 기능 추가에도 유연하게 대응할 수 있습니다.
+1. **효율적인 코드**
+2. **AWS를 이용한 이미지 처리**
+3. **비동기 적용**
+4. **유저 간 채팅 적용**
